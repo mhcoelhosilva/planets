@@ -1,0 +1,1 @@
+libglewLib.a C:/repo/gltest/src/../libs/soil/lib/libSOIL.a -lglu32 -lopengl32 C:/repo/gltest/libs/glfw-3.3.bin.WIN32/glfw-3.3.bin.WIN32/lib-mingw-w64/glfw3.dll -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 
