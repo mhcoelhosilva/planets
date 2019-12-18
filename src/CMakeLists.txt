@@ -25,10 +25,14 @@ add_library(glewLib STATIC ${CMAKE_SOURCE_DIR}/../libs/glew-2.1.0/src/glew.c)
 
 set(SOIL_LIBRARY ${CMAKE_SOURCE_DIR}/../libs/soil/lib/libSOIL.a)
 
+add_library(planetLib STATIC loadOBJ.hpp loadTex.hpp planet.hpp)
+set_target_properties(planetLib PROPERTIES LINKER_LANGUAGE CXX)
+
 target_link_libraries (gltest 
 	glewLib
 	${SOIL_LIBRARY}
 	${OPENGL_glu_LIBRARY}
 	${OPENGL_gl_LIBRARY} 
 	${GLFW_LIBRARY}
+	planetLib
 )

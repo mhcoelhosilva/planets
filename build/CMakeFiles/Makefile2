@@ -67,6 +67,7 @@ CMAKE_BINARY_DIR = C:\repo\gltest\build
 # Target rules for target CMakeFiles/gltest.dir
 
 # All Build rule for target.
+CMakeFiles/gltest.dir/all: CMakeFiles/planetLib.dir/all
 CMakeFiles/gltest.dir/all: CMakeFiles/glewLib.dir/all
 	$(MAKE) -f CMakeFiles\gltest.dir\build.make CMakeFiles/gltest.dir/depend
 	$(MAKE) -f CMakeFiles\gltest.dir\build.make CMakeFiles/gltest.dir/build
@@ -80,7 +81,7 @@ all: CMakeFiles/gltest.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/gltest.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start C:\repo\gltest\build\CMakeFiles 4
+	$(CMAKE_COMMAND) -E cmake_progress_start C:\repo\gltest\build\CMakeFiles 5
 	$(MAKE) -f CMakeFiles\Makefile2 CMakeFiles/gltest.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start C:\repo\gltest\build\CMakeFiles 0
 .PHONY : CMakeFiles/gltest.dir/rule
@@ -134,6 +135,43 @@ CMakeFiles/glewLib.dir/clean:
 
 # clean rule for target.
 clean: CMakeFiles/glewLib.dir/clean
+
+.PHONY : clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/planetLib.dir
+
+# All Build rule for target.
+CMakeFiles/planetLib.dir/all:
+	$(MAKE) -f CMakeFiles\planetLib.dir\build.make CMakeFiles/planetLib.dir/depend
+	$(MAKE) -f CMakeFiles\planetLib.dir\build.make CMakeFiles/planetLib.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=C:\repo\gltest\build\CMakeFiles --progress-num=5 "Built target planetLib"
+.PHONY : CMakeFiles/planetLib.dir/all
+
+# Include target in all.
+all: CMakeFiles/planetLib.dir/all
+
+.PHONY : all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/planetLib.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start C:\repo\gltest\build\CMakeFiles 1
+	$(MAKE) -f CMakeFiles\Makefile2 CMakeFiles/planetLib.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start C:\repo\gltest\build\CMakeFiles 0
+.PHONY : CMakeFiles/planetLib.dir/rule
+
+# Convenience name for target.
+planetLib: CMakeFiles/planetLib.dir/rule
+
+.PHONY : planetLib
+
+# clean rule for target.
+CMakeFiles/planetLib.dir/clean:
+	$(MAKE) -f CMakeFiles\planetLib.dir\build.make CMakeFiles/planetLib.dir/clean
+.PHONY : CMakeFiles/planetLib.dir/clean
+
+# clean rule for target.
+clean: CMakeFiles/planetLib.dir/clean
 
 .PHONY : clean
 

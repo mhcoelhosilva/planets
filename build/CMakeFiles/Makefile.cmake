@@ -55,4 +55,5 @@ set(CMAKE_MAKEFILE_PRODUCTS
 set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/gltest.dir/DependInfo.cmake"
   "CMakeFiles/glewLib.dir/DependInfo.cmake"
+  "CMakeFiles/planetLib.dir/DependInfo.cmake"
   )

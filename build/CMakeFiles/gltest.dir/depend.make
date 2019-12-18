@@ -169,5 +169,8 @@ CMakeFiles/gltest.dir/gltest.cpp.obj: C:/repo/gltest/libs/glm-0.9.9.5/glm/vec3.h
 CMakeFiles/gltest.dir/gltest.cpp.obj: C:/repo/gltest/libs/glm-0.9.9.5/glm/vec4.hpp
 CMakeFiles/gltest.dir/gltest.cpp.obj: C:/repo/gltest/libs/glm-0.9.9.5/glm/vector_relational.hpp
 CMakeFiles/gltest.dir/gltest.cpp.obj: C:/repo/gltest/src/gltest.cpp
+CMakeFiles/gltest.dir/gltest.cpp.obj: C:/repo/gltest/src/loadOBJ.hpp
+CMakeFiles/gltest.dir/gltest.cpp.obj: C:/repo/gltest/src/loadTex.hpp
+CMakeFiles/gltest.dir/gltest.cpp.obj: C:/repo/gltest/src/planet.hpp
 CMakeFiles/gltest.dir/gltest.cpp.obj: C:/repo/gltest/src/soil/src/SOIL.h
 

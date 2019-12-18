@@ -1,41 +1,6 @@
-#include <stdio.h>
-
-//First glad (needed?)
-//#include <glad/gl.h>
-
-#include <GL/glew.h>
-#include <glfw3.h>
-
-//GLM (add other headers which might be needed)
-#include <glm.hpp>
-#include <gtc/matrix_transform.hpp>
-
-#include <math.h>
-#include <stdlib.h>
-#include <chrono>
-#include <unistd.h>
-#include <iostream>
-#include <vector>
-#include <cstring>
-//#include "linmath.h"
-#include <Windows.h>
-
-#include <SOIL.h>
-
-#ifndef MAKEFOURCC
-    #define MAKEFOURCC(ch0, ch1, ch2, ch3)                              \
-                ((DWORD)(BYTE)(ch0) | ((DWORD)(BYTE)(ch1) << 8) |   \
-                ((DWORD)(BYTE)(ch2) << 16) | ((DWORD)(BYTE)(ch3) << 24 ))
-#endif //defined(MAKEFOURCC)
-
-/*
- * FOURCC codes for DX compressed-texture pixel formats
- */
-#define FOURCC_DXT1  (MAKEFOURCC('D','X','T','1'))
-#define FOURCC_DXT2  (MAKEFOURCC('D','X','T','2'))
-#define FOURCC_DXT3  (MAKEFOURCC('D','X','T','3'))
-#define FOURCC_DXT4  (MAKEFOURCC('D','X','T','4'))
-#define FOURCC_DXT5  (MAKEFOURCC('D','X','T','5'))
+#include "loadTex.hpp"
+#include "loadOBJ.hpp"
+#include "planet.hpp"
 
 using namespace std;
 
@@ -67,7 +32,7 @@ static const char* fragment_shader_text =
 "out vec4 color;\n"
 "void main()\n"
 "{\n"
-"    vec2 longitudeLatitude = vec2((atan(texCoords.z, texCoords.x) / 3.1415926 + 1.0) * 0.5, (asin(texCoords.y / (sqrt(texCoords.x * texCoords.x + texCoords.y * texCoords.y + texCoords.z * texCoords.z)))) / 3.1415926 + 0.5);\n"
+"    vec2 longitudeLatitude = vec2((atan(texCoords.x, texCoords.z) / 3.1415926 + 1.0) * 0.5, (asin(texCoords.y / (sqrt(texCoords.x * texCoords.x + texCoords.y * texCoords.y + texCoords.z * texCoords.z)))) / 3.1415926 + 0.5);\n"
 "    color = texture( myTextureSampler, longitudeLatitude);\n"
 "}\n";
 
@@ -83,336 +48,14 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
         glfwSetWindowShouldClose(window, GLFW_TRUE);
 }
 
-GLuint loadTex(const char* filename)
-  {
-    GLuint tex_ID = SOIL_load_OGL_texture(filename, SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, (SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y | SOIL_FLAG_NTSC_SAFE_RGB | SOIL_FLAG_COMPRESS_TO_DXT | SOIL_FLAG_TEXTURE_REPEATS));
-    //Just bind and do not create a new texture
-    glBindTexture(GL_TEXTURE_2D, tex_ID);
-
-    //Get texture width and height
-    int width, height;
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glGenerateMipmap(GL_TEXTURE_2D);
-
-    //Unbind Texture
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    return tex_ID;
-  }
-
-GLuint loadDDS(const char* path) {
-  // lay out variables to be used
-	unsigned char* header;
-
-	unsigned int width;
-	unsigned int height;
-	unsigned int mipMapCount;
-
-	unsigned int blockSize;
-	unsigned int format;
-
-	unsigned int offset = 0;
-	unsigned int size = 0;
-
-	unsigned int w;
-	unsigned int h;
-
-	unsigned char* buffer = 0;
-
-	GLuint tid = 0;
-
-  // open the DDS file for binary reading and get file size
-	FILE* f;
-	if((f = fopen(path, "rb")) == 0)
-		return 0;
-	fseek(f, 0, SEEK_END);
-	long file_size = ftell(f);
-	fseek(f, 0, SEEK_SET);
-
-  // allocate new unsigned char space with 4 (file code) + 124 (header size) bytes
-  // read in 128 bytes from the file
-	header = (unsigned char*) malloc(128);
-	fread(header, 1, 128, f);
-
-  // compare the `DDS ` signature
-	if(memcmp(header, "DDS ", 4) != 0)
-		goto exit;
-
-  // extract height, width, and amount of mipmaps - yes it is stored height then width
-	height = (header[12]) | (header[13] << 8) | (header[14] << 16) | (header[15] << 24);
-	width = (header[16]) | (header[17] << 8) | (header[18] << 16) | (header[19] << 24);
-	mipMapCount = (header[28]) | (header[29] << 8) | (header[30] << 16) | (header[31] << 24);
-
-  // figure out what format to use for what fourCC file type it is
-  // block size is about physical chunk storage of compressed data in file (important)
-	if(header[84] == 'D') {
-		switch(header[87]) {
-			case '1': // DXT1
-			  {
-				cout << "DX1" << endl;
-				format = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-				blockSize = 8;
-				break;
-			  }
-			case '3': // DXT3
-			  {
-				cout << "DX3" << endl;
-				format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-				blockSize = 16;
-				break;
-			  }
-			case '5': // DXT5
-			  {
-				cout << "DX5" << endl;
-				format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-				blockSize = 16;
-				break;
-			  }
-			case '0': // DX10
-			  {
-				// unsupported, else will error
-				// as it adds sizeof(struct DDS_HEADER_DXT10) between pixels
-				// so, buffer = malloc((file_size - 128) - sizeof(struct DDS_HEADER_DXT10));
-			  }
-			default: goto exit;
-		}
-	} else // BC4U/BC4S/ATI2/BC55/R8G8_B8G8/G8R8_G8B8/UYVY-packed/YUY2-packed unsupported
-		goto exit;
-
-  // allocate new unsigned char space with file_size - (file_code + header_size) magnitude
-  // read rest of file
-	buffer = (unsigned char*) malloc(file_size - 128);
-	if(buffer == 0)
-		goto exit;
-	fread(buffer, 1, file_size, f);
-
-  // prepare new incomplete texture
-	glGenTextures(1, &tid);
-	if(tid == 0)
-		goto exit;
-
-  // bind the texture
-  // make it complete by specifying all needed parameters and ensuring all mipmaps are filled
-	glBindTexture(GL_TEXTURE_2D, tid);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, ((mipMapCount == 0) ? 0 : mipMapCount-1)); // opengl likes array length of mipmaps
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // don't forget to enable mipmaping
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); //GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); //GL_CLAMP_TO_EDGE);
-
-    // prepare some variables
-		w = width;
-		h = height;
-
-    // loop through sending block at a time with the magic formula
-    // upload to opengl properly, note the offset transverses the pointer
-    // assumes each mipmap is 1/2 the size of the previous mipmap
-		for (unsigned int i=0; i<mipMapCount; i++) {
-			if(w == 0 || h == 0) { // discard any odd mipmaps 0x1 0x2 resolutions
-				mipMapCount--;
-				continue;
-			}
-			size = ((w+3)/4) * ((h+3)/4) * blockSize;
-			glCompressedTexImage2D(GL_TEXTURE_2D, i, format, w, h, 0, size, buffer + offset);
-			offset += size;
-			w /= 2;
-			h /= 2;
-		}
-	    // discard any odd mipmaps, ensure a complete texture
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, mipMapCount-1);
-    // unbind
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-  // easy macro to get out quick and uniform (minus like 15 lines of bulk)
-exit:
-	free(buffer);
-	free(header);
-	fclose(f);
-	return tid;
-}
-
-//GLuint loadDDS(const char * imagepath)
-//{
-//    unsigned char header[124];
-//
-//    FILE *fp;
-//
-//    /* try to open the file */
-//    fp = fopen(imagepath, "rb");
-//    if (fp == NULL)
-//        return 0;
-//
-//    /* verify the type of file */
-//    char filecode[4];
-//    fread(filecode, 1, 4, fp);
-//    if (strncmp(filecode, "DDS ", 4) != 0) {
-//        fclose(fp);
-//        return 0;
-//    }
-//
-//    /* get the surface desc */
-//    fread(&header, 124, 1, fp);
-//
-//    unsigned int height      = *(unsigned int*)&(header[8 ]);
-//    unsigned int width         = *(unsigned int*)&(header[12]);
-//    unsigned int linearSize     = *(unsigned int*)&(header[16]);
-//    unsigned int mipMapCount = *(unsigned int*)&(header[24]);
-//    unsigned int fourCC      = *(unsigned int*)&(header[80]);
-//
-//    unsigned char * buffer;
-//    unsigned int bufsize;
-//    /* how big is it going to be including all mipmaps? */
-//    bufsize = mipMapCount > 1 ? linearSize * 2 : linearSize;
-//    buffer = (unsigned char*)malloc(bufsize * sizeof(unsigned char));
-//    fread(buffer, 1, bufsize, fp);
-//    /* close the file pointer */
-//    fclose(fp);
-//
-//    unsigned int components  = (fourCC == FOURCC_DXT1) ? 3 : 4;
-//    unsigned int format;
-//    switch(fourCC)
-//    {
-//    case FOURCC_DXT1:
-//        format = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-//        break;
-//    case FOURCC_DXT3:
-//        format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-//        break;
-//    case FOURCC_DXT5:
-//        format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-//        break;
-//    default:
-//        free(buffer);
-//        return 0;
-//    }
-//
-//    // Create one OpenGL texture
-//    GLuint textureID;
-//    glGenTextures(1, &textureID);
-//
-//    // "Bind" the newly created texture : all future texture functions will modify this texture
-//    glBindTexture(GL_TEXTURE_2D, textureID);
-//
-//    unsigned int blockSize = (format == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT) ? 8 : 16;
-//    unsigned int offset = 0;
-//
-//    /* load the mipmaps */
-//    for (unsigned int level = 0; level < mipMapCount && (width || height); ++level)
-//    {
-//        unsigned int size = ((width+3)/4)*((height+3)/4)*blockSize;
-//        glCompressedTexImage2D(GL_TEXTURE_2D, level, format, width, height,
-//            0, size, buffer + offset);
-//
-//        offset += size;
-//        width  /= 2;
-//        height /= 2;
-//    }
-//    free(buffer);
-//
-//    return textureID;
-//
-//}
-
-bool loadOBJ(
-    const char * path,
-    std::vector < glm::vec3 > & out_vertices,
-    std::vector < glm::vec2 > & out_uvs,
-    std::vector < glm::vec3 > & out_normals
-)
-{
-  std::vector< unsigned int > vertexIndices, uvIndices, normalIndices;
-  std::vector< glm::vec3 > temp_vertices;
-  std::vector< glm::vec2 > temp_uvs;
-  std::vector< glm::vec3 > temp_normals;
-
-  FILE * file = fopen(path, "r");
-  if( file == NULL ){
-      printf("Impossible to open the file !\n");
-      return false;
-  }
-
-  while( 1 ){
-
-      char lineHeader[128];
-      // read the first word of the line
-      int res = fscanf(file, "%s", lineHeader);
-      if (res == EOF)
-          break; // EOF = End Of File. Quit the loop.
-
-      // else : parse lineHeader
-      if ( strcmp( lineHeader, "v" ) == 0 ){
-          glm::vec3 vertex;
-          fscanf(file, "%f %f %f\n", &vertex.x, &vertex.y, &vertex.z );
-          temp_vertices.push_back(vertex);
-      }else if ( strcmp( lineHeader, "vt" ) == 0 ){
-          glm::vec2 uv;
-          fscanf(file, "%f %f\n", &uv.x, &uv.y );
-          temp_uvs.push_back(uv);
-      }else if ( strcmp( lineHeader, "vn" ) == 0 ){
-          glm::vec3 normal;
-          fscanf(file, "%f %f %f\n", &normal.x, &normal.y, &normal.z );
-          temp_normals.push_back(normal);
-      }else if ( strcmp( lineHeader, "f" ) == 0 ){
-          std::string vertex1, vertex2, vertex3;
-          unsigned int vertexIndex[3], uvIndex[3], normalIndex[3];
-          int matches = fscanf(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n", &vertexIndex[0], &uvIndex[0], &normalIndex[0], &vertexIndex[1], &uvIndex[1], &normalIndex[1], &vertexIndex[2], &uvIndex[2], &normalIndex[2] );
-          if (matches != 9){
-              printf("File can't be read by our simple parser : ( Try exporting with other options\n");
-              return false;
-          }
-          vertexIndices.push_back(vertexIndex[0]);
-          vertexIndices.push_back(vertexIndex[1]);
-          vertexIndices.push_back(vertexIndex[2]);
-          uvIndices    .push_back(uvIndex[0]);
-          uvIndices    .push_back(uvIndex[1]);
-          uvIndices    .push_back(uvIndex[2]);
-          normalIndices.push_back(normalIndex[0]);
-          normalIndices.push_back(normalIndex[1]);
-          normalIndices.push_back(normalIndex[2]);
-      }
-  }
-
-  // Lastly, convert vectors into glm::vec3 with indices removed
-  for (unsigned int i = 0; i < vertexIndices.size(); i++)
-    {
-      unsigned int vertexIndex = vertexIndices[i];
-      glm::vec3 vertex = temp_vertices[ vertexIndex-1 ];
-      out_vertices.push_back(vertex);
-    }
-
-  for (unsigned int i = 0; i < uvIndices.size(); i++)
-    {
-      unsigned int uvIndex = uvIndices[i];
-      glm::vec2 uv = temp_uvs[ uvIndex-1 ];
-      out_uvs.push_back(uv);
-    }
-
-  for (unsigned int i = 0; i < normalIndices.size(); i++)
-    {
-      unsigned int normalIndex = normalIndices[i];
-      glm::vec3 normal = temp_normals[ normalIndex-1 ];
-      out_normals.push_back(normal);
-    }
-
-  return true;
-}
-
 int main(void)
 {
     //Declare window/context
     GLFWwindow* window;
     //Declare handlers for vertex array, vertex buffer, shaders, and program
     GLuint vertex_shader, fragment_shader, program;
-    //Declare location for MVP and Position and Color attributes
+    //Declare location for MVP
     GLint mvp_location;
-//    GLint vpos_location, vcol_location;
 
     //Set error callback function
     glfwSetErrorCallback(error_callback);
@@ -470,9 +113,6 @@ int main(void)
      * so this wastes a lot of CPU and GPU cycles.
      */
     glfwSwapInterval(1);
-
-    // NOTE: OpenGL error checks have been omitted for brevity
-
 
     // Read our .obj file
     std::vector< glm::vec3 > vertices;
@@ -536,7 +176,7 @@ int main(void)
     //Texture vertex data:
     glEnable(GL_TEXTURE_2D);
     glActiveTexture(GL_TEXTURE0);
-    GLuint textureID = loadTex("../assets/Earthmap720x360_grid.jpg");
+    GLuint textureID = loadTex("../assets/earth.DDS");
     //Set active texture unit (for shader)
     //The main purpose of texture units is to allow us to use more than 1 texture in our shaders.
     //By assigning texture units to the samplers, we can bind to multiple textures at once as long
@@ -609,6 +249,7 @@ int main(void)
     glm::mat4 Model = glm::mat4(1.0f);
     glm::vec3 scale = glm::vec3(0.5f, 0.5f, 0.5f);
     Model = glm::scale(Model, scale);
+
     //==Main loop==//
     while (!glfwWindowShouldClose(window))
     {

@@ -19,6 +19,7 @@ set(CMAKE_CXX_TARGET_INCLUDE_PATH
 # Targets to which this target links.
 set(CMAKE_TARGET_LINKED_INFO_FILES
   "C:/repo/gltest/build/CMakeFiles/glewLib.dir/DependInfo.cmake"
+  "C:/repo/gltest/build/CMakeFiles/planetLib.dir/DependInfo.cmake"
   )
 
 # Fortran module output directory.

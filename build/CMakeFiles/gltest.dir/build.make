@@ -82,6 +82,7 @@ gltest.exe: CMakeFiles/gltest.dir/build.make
 gltest.exe: libglewLib.a
 gltest.exe: C:/repo/gltest/src/../libs/soil/lib/libSOIL.a
 gltest.exe: C:/repo/gltest/libs/glfw-3.3.bin.WIN32/glfw-3.3.bin.WIN32/lib-mingw-w64/glfw3.dll
+gltest.exe: libplanetLib.a
 gltest.exe: CMakeFiles/gltest.dir/linklibs.rsp
 gltest.exe: CMakeFiles/gltest.dir/objects1.rsp
 gltest.exe: CMakeFiles/gltest.dir/link.txt

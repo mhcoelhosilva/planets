@@ -135,6 +135,19 @@ glewLib/fast:
 	$(MAKE) -f CMakeFiles\glewLib.dir\build.make CMakeFiles/glewLib.dir/build
 .PHONY : glewLib/fast
 
+#=============================================================================
+# Target rules for targets named planetLib
+
+# Build rule for target.
+planetLib: cmake_check_build_system
+	$(MAKE) -f CMakeFiles\Makefile2 planetLib
+.PHONY : planetLib
+
+# fast build rule for target.
+planetLib/fast:
+	$(MAKE) -f CMakeFiles\planetLib.dir\build.make CMakeFiles/planetLib.dir/build
+.PHONY : planetLib/fast
+
 C_/repo/gltest/libs/glew-2.1.0/src/glew.obj: C_/repo/gltest/libs/glew-2.1.0/src/glew.c.obj
 
 .PHONY : C_/repo/gltest/libs/glew-2.1.0/src/glew.obj
@@ -197,6 +210,7 @@ help:
 	@echo ... depend
 	@echo ... gltest
 	@echo ... glewLib
+	@echo ... planetLib
 	@echo ... edit_cache
 	@echo ... rebuild_cache
 	@echo ... C_/repo/gltest/libs/glew-2.1.0/src/glew.obj
