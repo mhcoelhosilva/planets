@@ -478,7 +478,7 @@ int main(void)
     std::vector< glm::vec3 > vertices;
     std::vector< glm::vec2 > uvs;
     std::vector< glm::vec3 > normals; // Won't be used at the moment.
-    bool res = loadOBJ("sphere.obj", vertices, uvs, normals);
+    bool res = loadOBJ("../assets/sphere.obj", vertices, uvs, normals);
 
     cout << "vertices.size() = " << vertices.size() << endl;
     cout << "uvs.size() = " << uvs.size() << endl;
@@ -536,7 +536,7 @@ int main(void)
     //Texture vertex data:
     glEnable(GL_TEXTURE_2D);
     glActiveTexture(GL_TEXTURE0);
-    GLuint textureID = loadTex("Earthmap720x360_grid.jpg");
+    GLuint textureID = loadTex("../assets/Earthmap720x360_grid.jpg");
     //Set active texture unit (for shader)
     //The main purpose of texture units is to allow us to use more than 1 texture in our shaders.
     //By assigning texture units to the samplers, we can bind to multiple textures at once as long
@@ -609,8 +609,6 @@ int main(void)
     glm::mat4 Model = glm::mat4(1.0f);
     glm::vec3 scale = glm::vec3(0.5f, 0.5f, 0.5f);
     Model = glm::scale(Model, scale);
-    bool goingUp = true;
-    float previousYPos = 0.0f;
     //==Main loop==//
     while (!glfwWindowShouldClose(window))
     {
@@ -633,7 +631,7 @@ int main(void)
         glFrontFace(GL_CCW);
 
         //Screen specific variables for projection:
-	float ratio;
+		float ratio;
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
         ratio = width / (float) height;
@@ -651,35 +649,6 @@ int main(void)
 
         //Rotate model in y-axis
         Model = glm::rotate(Model, 0.04f, glm::vec3(0, 1.0f, 0));
-
-        //Bob up and down
-        float currentYPos = glm::vec3(Model[3]).y;
-        if (currentYPos < 0.3f && previousYPos <= currentYPos)
-          {
-            goingUp = true;
-          }
-        else if (currentYPos <= 0.0f)
-          {
-            goingUp = true;
-          }
-        else if (currentYPos > 0.0f && previousYPos > currentYPos)
-          {
-            goingUp = false;
-          }
-        else if (currentYPos >= 0.3f)
-          {
-            goingUp = false;
-          }
-        previousYPos = currentYPos;
-
-        if (goingUp)
-          {
-            Model = glm::translate(Model, glm::vec3(0, 0.005f, 0));
-          }
-        else if (!goingUp)
-          {
-            Model = glm::translate(Model, glm::vec3(0, -0.005f, 0));
-          }
 
         // Our ModelViewProjection : multiplication of our 3 matrices
         glm::mat4 mvp = Projection * View * Model; // Remember, matrix multiplication is the other way around
