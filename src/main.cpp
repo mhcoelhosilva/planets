@@ -2,9 +2,9 @@
 #include "loadOBJ.hpp"
 #include "planet.hpp"
 
-using namespace std;
+#include <chrono>
 
-#define pi 3.142857
+using namespace std;
 
 double offset = 0.0;
 
@@ -42,10 +42,41 @@ static void error_callback(int error, const char* description)
     fprintf(stderr, "Error: %s\n", description);
 }
 
+glm::vec3 cameraPos = { 0, 0, 270 };
+glm::vec3 cameraLookAt = { 0, 0, 0 };
+
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+	{
+		glfwSetWindowShouldClose(window, GLFW_TRUE);
+	}
+	else if (key == GLFW_KEY_A && action == GLFW_REPEAT)
+	{
+		cameraPos.x = cameraPos.x - 5.0f;
+		cameraLookAt.x = cameraLookAt.x - 5.0f;
+	}
+	else if (key == GLFW_KEY_D && action == GLFW_REPEAT)
+	{
+		cameraPos.x = cameraPos.x + 5.0f;
+		cameraLookAt.x = cameraLookAt.x + 5.0f;
+	}
+	else if (key == GLFW_KEY_W && action == GLFW_REPEAT)
+	{
+		cameraPos.z = cameraPos.z - 5.0f;
+	}
+	else if (key == GLFW_KEY_S && action == GLFW_REPEAT)
+	{
+		cameraPos.z = cameraPos.z + 5.0f;
+	}
+	else if (key == GLFW_KEY_UP && action == GLFW_REPEAT)
+	{
+		Planet::scaleConst = Planet::scaleConst + 5.0f;
+	}
+	else if (key == GLFW_KEY_DOWN && action == GLFW_REPEAT)
+	{
+		Planet::scaleConst = Planet::scaleConst - 5.0f;
+	}
 }
 
 int main(void)
@@ -74,7 +105,7 @@ int main(void)
 //    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // We don't want the old OpenGL
 
     //Open window/context
-    window = glfwCreateWindow(1024, 768, "Simple example", NULL, NULL);
+    window = glfwCreateWindow(1024, 768, "Planets", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -175,13 +206,19 @@ int main(void)
 
     //Texture vertex data:
     glEnable(GL_TEXTURE_2D);
+	//Set active texture unit (for shader)
+	//The main purpose of texture units is to allow us to use more than 1 texture in our shaders.
+	//By assigning texture units to the samplers, we can bind to multiple textures at once as long
+	//as we activate the corresponding texture unit first.
     glActiveTexture(GL_TEXTURE0);
-    GLuint textureID = loadTex("../assets/earth.DDS");
-    //Set active texture unit (for shader)
-    //The main purpose of texture units is to allow us to use more than 1 texture in our shaders.
-    //By assigning texture units to the samplers, we can bind to multiple textures at once as long
-    //as we activate the corresponding texture unit first.
-    glBindTexture(GL_TEXTURE_2D, textureID);
+	//Load planet textures
+	vector<Planet> planets;
+	for (int i = 0; i < 9; ++i)
+	{
+		planets.emplace_back(Planet(i));
+	}
+
+    //GLuint textureID = loadTex("../assets/earth.DDS");
 
     //Variables for checking shader compilation
     GLint Result = GL_FALSE;
@@ -245,15 +282,15 @@ int main(void)
     //We also have to tell OpenGL to which texture unit each shader sampler belongs to by setting each sampler
     glUniform1i(glGetUniformLocation(program, "myTextureSampler"), 0);
 
-    // Model matrix : an identity matrix (model will be at the origin)
-    glm::mat4 Model = glm::mat4(1.0f);
-    glm::vec3 scale = glm::vec3(0.5f, 0.5f, 0.5f);
-    Model = glm::scale(Model, scale);
-
+	chrono::system_clock::time_point oldTime = chrono::system_clock::now();
     //==Main loop==//
     while (!glfwWindowShouldClose(window))
     {
-	glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
+		chrono::system_clock::time_point newTime = chrono::system_clock::now();
+		chrono::system_clock::duration deltaTime = newTime - oldTime;
+		oldTime = newTime;
+
+		glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
         //First clear the screen.
         //This will change the background color to dark blue because of the previous glClearColor(0.0f, 0.0f, 0.4f, 0.0f) call:
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -279,27 +316,37 @@ int main(void)
         glViewport(0, 0, width, height);
 
         // Projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
-        glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float) width / (float)height, 0.1f, 100.0f);
+        glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float) width / (float)height, 0.1f, 500.0f);
 
         // View (camera) matrix
         glm::mat4 View = glm::lookAt(
-            glm::vec3(4,3,3), // Camera is at (5,3,3), in World Space
-            glm::vec3(0,0,0), // and looks at the origin
+            cameraPos, // Camera is at (5,3,3), in World Space
+            cameraLookAt, // and looks at the origin
             glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
             );
 
-        //Rotate model in y-axis
-        Model = glm::rotate(Model, 0.04f, glm::vec3(0, 1.0f, 0));
+		//For each of the planets
+		for (unsigned int i = 0; i < planets.size(); ++i)
+		{
+			//Bind texture
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, planets[i].texID);
 
-        // Our ModelViewProjection : multiplication of our 3 matrices
-        glm::mat4 mvp = Projection * View * Model; // Remember, matrix multiplication is the other way around
+			//Update planet location
+			planets[i].updateLocation(chrono::duration_cast<chrono::seconds>(deltaTime).count());
+			planets[i].updateScale();
 
-        // Send our transformation to the currently bound shader, in the "MVP" uniform
-        // This is done in the main loop since each model will have a different MVP matrix (At least for the M part)
-        glUniformMatrix4fv(mvp_location, 1, GL_FALSE, &mvp[0][0]);
+			// Our ModelViewProjection : multiplication of our 3 matrices
+			glm::mat4 mvp = Projection * View * planets[i].model; // Remember, matrix multiplication is the other way around
 
-        glDrawArrays(GL_TRIANGLES, 0, vertices.size() * sizeof(glm::vec3)); // Starting from vertex 0; 3 vertices = 1 triangle
-        glfwSwapBuffers(window);
+			// Send our transformation to the currently bound shader, in the "MVP" uniform
+			// This is done in the main loop since each model will have a different MVP matrix (At least for the M part)
+			glUniformMatrix4fv(mvp_location, 1, GL_FALSE, &mvp[0][0]);
+
+			glDrawArrays(GL_TRIANGLES, 0, vertices.size() * sizeof(glm::vec3)); // Starting from vertex 0; 3 vertices = 1 triangle
+
+		}
+		glfwSwapBuffers(window);
         glfwPollEvents();
     }
     glfwDestroyWindow(window);

@@ -110,17 +110,17 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named gltest
+# Target rules for targets named planets
 
 # Build rule for target.
-gltest: cmake_check_build_system
-	$(MAKE) -f CMakeFiles\Makefile2 gltest
-.PHONY : gltest
+planets: cmake_check_build_system
+	$(MAKE) -f CMakeFiles\Makefile2 planets
+.PHONY : planets
 
 # fast build rule for target.
-gltest/fast:
-	$(MAKE) -f CMakeFiles\gltest.dir\build.make CMakeFiles/gltest.dir/build
-.PHONY : gltest/fast
+planets/fast:
+	$(MAKE) -f CMakeFiles\planets.dir\build.make CMakeFiles/planets.dir/build
+.PHONY : planets/fast
 
 #=============================================================================
 # Target rules for targets named glewLib
@@ -175,32 +175,32 @@ C_/repo/gltest/libs/glew-2.1.0/src/glew.c.s:
 	$(MAKE) -f CMakeFiles\glewLib.dir\build.make CMakeFiles/glewLib.dir/C_/repo/gltest/libs/glew-2.1.0/src/glew.c.s
 .PHONY : C_/repo/gltest/libs/glew-2.1.0/src/glew.c.s
 
-gltest.obj: gltest.cpp.obj
+main.obj: main.cpp.obj
 
-.PHONY : gltest.obj
+.PHONY : main.obj
 
 # target to build an object file
-gltest.cpp.obj:
-	$(MAKE) -f CMakeFiles\gltest.dir\build.make CMakeFiles/gltest.dir/gltest.cpp.obj
-.PHONY : gltest.cpp.obj
+main.cpp.obj:
+	$(MAKE) -f CMakeFiles\planets.dir\build.make CMakeFiles/planets.dir/main.cpp.obj
+.PHONY : main.cpp.obj
 
-gltest.i: gltest.cpp.i
+main.i: main.cpp.i
 
-.PHONY : gltest.i
+.PHONY : main.i
 
 # target to preprocess a source file
-gltest.cpp.i:
-	$(MAKE) -f CMakeFiles\gltest.dir\build.make CMakeFiles/gltest.dir/gltest.cpp.i
-.PHONY : gltest.cpp.i
+main.cpp.i:
+	$(MAKE) -f CMakeFiles\planets.dir\build.make CMakeFiles/planets.dir/main.cpp.i
+.PHONY : main.cpp.i
 
-gltest.s: gltest.cpp.s
+main.s: main.cpp.s
 
-.PHONY : gltest.s
+.PHONY : main.s
 
 # target to generate assembly for a file
-gltest.cpp.s:
-	$(MAKE) -f CMakeFiles\gltest.dir\build.make CMakeFiles/gltest.dir/gltest.cpp.s
-.PHONY : gltest.cpp.s
+main.cpp.s:
+	$(MAKE) -f CMakeFiles\planets.dir\build.make CMakeFiles/planets.dir/main.cpp.s
+.PHONY : main.cpp.s
 
 # Help Target
 help:
@@ -208,17 +208,17 @@ help:
 	@echo ... all (the default if no target is provided)
 	@echo ... clean
 	@echo ... depend
-	@echo ... gltest
+	@echo ... edit_cache
+	@echo ... planets
 	@echo ... glewLib
 	@echo ... planetLib
-	@echo ... edit_cache
 	@echo ... rebuild_cache
 	@echo ... C_/repo/gltest/libs/glew-2.1.0/src/glew.obj
 	@echo ... C_/repo/gltest/libs/glew-2.1.0/src/glew.i
 	@echo ... C_/repo/gltest/libs/glew-2.1.0/src/glew.s
-	@echo ... gltest.obj
-	@echo ... gltest.i
-	@echo ... gltest.s
+	@echo ... main.obj
+	@echo ... main.i
+	@echo ... main.s
 .PHONY : help
 
 

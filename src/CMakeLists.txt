@@ -16,8 +16,8 @@ find_package (glm REQUIRED)
 #set(CMAKE_LIBRARY_PATH "${CMAKE_SOURCE_DIR}/../libs/glew-2.1.0-win32/glew-2.1.0/bin/Release/Win32")
 #find_package (glew REQUIRED STATIC)
 
-set(SOURCE_FILES gltest.cpp)
-add_executable(gltest ${SOURCE_FILES})
+set(SOURCE_FILES main.cpp)
+add_executable(planets ${SOURCE_FILES})
 
 include_directories(${OPENGL_INCLUDE_DIR} ${GLEW_DIR} ${GLFW_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/soil/src)
 
@@ -28,7 +28,7 @@ set(SOIL_LIBRARY ${CMAKE_SOURCE_DIR}/../libs/soil/lib/libSOIL.a)
 add_library(planetLib STATIC loadOBJ.hpp loadTex.hpp planet.hpp)
 set_target_properties(planetLib PROPERTIES LINKER_LANGUAGE CXX)
 
-target_link_libraries (gltest 
+target_link_libraries (planets 
 	glewLib
 	${SOIL_LIBRARY}
 	${OPENGL_glu_LIBRARY}
