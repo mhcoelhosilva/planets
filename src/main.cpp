@@ -112,8 +112,8 @@ int main(void)
         exit(EXIT_FAILURE);
     }
 
-    cout << glGetError() << endl;
-    cout << gluErrorString(glGetError()) << endl;
+    //cout << glGetError() << endl;
+    //cout << gluErrorString(glGetError()) << endl;
 
     //Set key callback function
     glfwSetKeyCallback(window, key_callback);
@@ -127,8 +127,8 @@ int main(void)
         return -1;
     }
 
-    cout << glGetError() << endl;
-    cout << gluErrorString(glGetError()) << endl;
+    //cout << glGetError() << endl;
+    //cout << gluErrorString(glGetError()) << endl;
 
     /* GLFW windows by default use double buffering. That means that each window
      * has two rendering buffers; a front buffer and a back buffer. The front buffer
@@ -151,8 +151,7 @@ int main(void)
     std::vector< glm::vec3 > normals; // Won't be used at the moment.
     bool res = loadOBJ("../assets/sphere.obj", vertices, uvs, normals);
 
-    cout << "vertices.size() = " << vertices.size() << endl;
-    cout << "uvs.size() = " << uvs.size() << endl;
+    //cout << "vertices.size() = " << vertices.size() << endl;
 
     GLuint pos_buffer;
 
@@ -218,14 +217,9 @@ int main(void)
 		planets.emplace_back(Planet(i));
 	}
 
-    //GLuint textureID = loadTex("../assets/earth.DDS");
-
     //Variables for checking shader compilation
     GLint Result = GL_FALSE;
     int InfoLogLength;
-
-    cout << glGetError() << endl;
-    cout << gluErrorString(glGetError()) << endl;
 
     //Compile vertex shader defined as text above to GL object and compile
     vertex_shader = glCreateShader(GL_VERTEX_SHADER);
@@ -316,7 +310,7 @@ int main(void)
         glViewport(0, 0, width, height);
 
         // Projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
-        glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float) width / (float)height, 0.1f, 500.0f);
+        glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float) width / (float)height, 0.1f, 50000.0f);
 
         // View (camera) matrix
         glm::mat4 View = glm::lookAt(
@@ -333,8 +327,8 @@ int main(void)
 			glBindTexture(GL_TEXTURE_2D, planets[i].texID);
 
 			//Update planet location
-			planets[i].updateLocation(chrono::duration_cast<chrono::seconds>(deltaTime).count());
-			planets[i].updateScale();
+			planets[i].updateLocation(chrono::duration_cast<chrono::milliseconds>(deltaTime).count());
+			//planets[i].updateScale();
 
 			// Our ModelViewProjection : multiplication of our 3 matrices
 			glm::mat4 mvp = Projection * View * planets[i].model; // Remember, matrix multiplication is the other way around

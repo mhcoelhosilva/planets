@@ -73,7 +73,7 @@ class Planet
 	  }
 
 	  Planet(int index)
-		  : yPos(0), zPos(0), counter(0)
+		  : yPos(0), zPos(0), counter(0), index(index)
 	  {
 		  //Load texture
 		  texID = loadTex(planetTextures[index].c_str());
@@ -113,41 +113,49 @@ class Planet
 			  translation = getPosInWorldCoordinates(translation);
 			  model = glm::translate(model, translation);
 			  counter++;
-			  return;
 		  }
-
-		  //Rotate model in y-axis
-		  model = glm::rotate(model, rotationRate, glm::vec3(0, 1.0f, 0));
-
-		  if (index == 0)
+		  else
 		  {
-			  return;
+			  //Rotate model in y-axis
+			  //model = glm::rotate(model, rotationRate * dt, glm::vec3(0, 1.0f, 0));
+
+			  //Normal to orbital plane is defined as (0, 1, 0)
+			  glm::vec3 normal = { 0.0, 1.0, 0.0 };
+			  glm::vec3 pos = { xPos, yPos, zPos };
+			  float r = glm::length(pos);
+
+			  if (abs(r) > 0.0f)
+			  {
+				  float magnitudeV = timeScale * sqrt(mu*(2.0f / r - 1.0f / a));
+				  //cout << "mag V: " << magnitudeV;
+				  //Get unit vector direction of velocity
+				  //Initial V is in +z dir
+				  glm::vec3 directionV = glm::cross(pos, normal);
+				  //cout << "index: " << index;
+				  //cout << "Direction v: " << directionV.x << " " << directionV.y << " " << directionV.z << endl;
+				  directionV = directionV / glm::length(directionV);
+				  //cout << "Direction v: " << directionV.x << " " << directionV.y << " " << directionV.z << endl;
+				  //Finally, the velocity vector
+				  glm::vec3 velocity = magnitudeV * directionV;
+				  //cout << "velocity: " << velocity.x << " " << velocity.y << " " << velocity.z << endl;
+
+				  //Update location in local coordinates
+				  glm::vec3 newPos = pos + velocity * dt / 1000.0f;
+				  //cout << "Pos: " << pos.x << " " << pos.y << " " << pos.z << endl;
+				  //cout << "newPos: " << newPos.x << " " << newPos.y << " " << newPos.z << endl;
+
+
+				  //Translate model to new position
+				  glm::vec3 translation = { newPos.x - pos.x, newPos.y - pos.y, newPos.z - pos.z };
+				  translation = getPosInWorldCoordinates(translation);
+				  model = glm::translate(model, translation);
+
+				  //Update stored position
+				  xPos = newPos.x;
+				  yPos = newPos.y;
+				  zPos = newPos.z;
+			  }
 		  }
-
-		  //Normal to orbital plane is defined as (0, 1, 0)
-		  glm::vec3 normal = {0.0, 1.0, 0.0};
-		  glm::vec3 pos = {xPos, yPos, zPos};
-		  float r = glm::length(pos);
-		  float magnitudeV = timeScale * sqrt(mu*(2/r - 1/a));
-		  //Get unit vector direction of velocity
-		  //Initial V is in +z dir
-		  glm::vec3 directionV = glm::cross(pos, normal);
-		  directionV = directionV / glm::length(directionV);
-		  //Finally, the velocity vector
-		  glm::vec3 velocity = magnitudeV * directionV;
-
-		  //Update location in local coordinates
-		  glm::vec3 newPos = pos + velocity * dt;
-
-		  //Translate model to new position
-		  glm::vec3 translation = { newPos.x - pos.x, newPos.y - pos.y, newPos.z - pos.z };
-		  translation = getPosInWorldCoordinates(translation);
-		  model = glm::translate(model, translation);
-
-		  //Update stored position
-		  xPos = newPos.x;
-		  yPos = newPos.y;
-		  zPos = newPos.z;
 	  }
 	  
 	  glm::vec3 getPosInWorldCoordinates(glm::vec3 localPos)
@@ -160,7 +168,7 @@ class Planet
 		  //Get transform coordinates and return as vec3
 		  glm::vec4 worldPos = transform * glm::vec4(localPos, 1.0);
 		  glm::vec3 worldPosv3(worldPos);
-		  worldPosv3 = worldPosv3 / 3000000.0f;
+		  worldPosv3 = worldPosv3 / 3000500.0f;
 		  
 		  return worldPosv3;
 	  }
@@ -180,11 +188,11 @@ class Planet
 };
 
 float Planet::scaleConst = 25.0f;
-float Planet::timeScale = 50000.0f;
+float Planet::timeScale = 75000.0f;
 vector<string> Planet::planetNames = { "sun", "mercury", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune" };
 vector<float> Planet::planetRadii = { 695510.0, 2439.7, 6051.8, 6371.0, 3389.5, 69911.0, 58232.0, 25362.0, 24622.0 }; //km
 vector<float> Planet::planetPerihelia = { 0.0, .307, .718, .98, 1.38, 4.95, 9.05, 18.4, 29.8 }; //AU
 vector<float> Planet::planetAphelia = { 0.0, .466, .728, 1.01, 1.66, 5.46, 10.12, 20.1, 30.4 }; //AU
 vector<string> Planet::planetTextures = { "../assets/sun.dds", "../assets/mercury.dds", "../assets/venus.dds", "../assets/earth.dds", "../assets/mars.dds", "../assets/jupiter.dds", "../assets/saturn.dds", "../assets/uranus.dds", "../assets/neptune.dds" };
 vector<float> Planet::planetMus = { 1.327 * pow(10.0, 20.0), 2.203 * pow(10.0, 13.0), 3.249 * pow(10.0, 14.0), 3.986 * pow(10.0, 14.0), 4.282 * pow(10.0, 13.0), 1.267 * pow(10.0, 17.0), 3.793 * pow(10.0, 16.0), 5.793 * pow(10.0, 15.0), 6.837 * pow(10.0, 15.0) };
-vector<float> Planet::planetRotRates = { (1.0/24.0) * (2.0f * pi / 86400.0f), 58.0f * (2.0f * pi / 86400.0f), -244.0f * (2.0f * pi / 86400.0f), (2.0f * pi / 86400.0f), 1.03f * (2.0f * pi / 86400.0f), 0.415f * (2.0f * pi / 86400.0f), 0.445f * (2.0f * pi / 86400.0f), -0.720f * (2.0f * pi / 86400.0f), 0.673f * (2.0f * pi / 86400.0f) };
+vector<float> Planet::planetRotRates = { 0.041667f * (2.0f * pi / 86400.0f), 58.0f * (2.0f * pi / 86400.0f), -244.0f * (2.0f * pi / 86400.0f), (2.0f * pi / 86400.0f), 1.03f * (2.0f * pi / 86400.0f), 0.415f * (2.0f * pi / 86400.0f), 0.445f * (2.0f * pi / 86400.0f), -0.720f * (2.0f * pi / 86400.0f), 0.673f * (2.0f * pi / 86400.0f) };
