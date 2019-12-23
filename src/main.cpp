@@ -12,15 +12,33 @@ double offset = 0.0;
 static const char* vertex_shader_text =
 "#version 330 core\n"
 "uniform mat4 MVP;\n"
+"uniform mat4 M;\n"
+"uniform mat4 V;\n"
 "layout(location = 0) in vec3 vertexPosition_modelspace;\n"
-"layout(location = 1) in vec3 vertexUV;\n"
+"layout(location = 1) in vec2 vertexUV;\n"
+"layout(location = 2) in vec3 vertexNormal_modelspace;\n"
 "out vec2 UV;\n"
 "out vec4 texCoords;\n"
+"out vec3 Normal_cameraspace;\n"
+"out vec3 LightDirection_cameraspace;\n"
+"out vec3 EyeDirection_cameraspace;\n"
 "void main()\n"
 "{\n"
 "    gl_Position = MVP * vec4(vertexPosition_modelspace, 1.0);\n"
 "    UV = vec2(vertexUV.x, 1.0 - vertexUV.y);\n"
 "    texCoords = vec4(vertexPosition_modelspace, 1.0);\n"
+// Position of the vertex, in worldspace : M * position
+"	 vec3 Position_worldspace = (M * vec4(vertexPosition_modelspace, 1)).xyz;\n"
+// Vector that goes from the vertex to the camera, in camera space.
+// In camera space, the camera is at the origin (0,0,0).
+"	 vec3 vertexPosition_cameraspace = (V * M * vec4(vertexPosition_modelspace, 1)).xyz; \n"
+"	 vec3 EyeDirection_cameraspace = vec3(0, 0, 0) - vertexPosition_cameraspace; \n"
+// Vector that goes from the vertex to the light, in camera space. M is ommited because it's identity.
+"	 vec3 LightPosition_worldspace = vec3(0, 0, 68);\n"	
+"	 vec3 LightPosition_cameraspace = (V * vec4(LightPosition_worldspace, 1)).xyz;\n"
+"	 LightDirection_cameraspace = LightPosition_cameraspace + EyeDirection_cameraspace;\n"
+// Normal of the the vertex, in camera space
+"	 Normal_cameraspace = (V * M * vec4(vertexNormal_modelspace, 0)).xyz;\n" // Only correct if ModelMatrix does not scale the model ! Use its inverse transpose if not.
 "}\n";
 
 //In fragment shader:
@@ -29,11 +47,33 @@ static const char* fragment_shader_text =
 "in vec2 UV;\n"
 "in vec4 texCoords;\n"
 "uniform sampler2D myTextureSampler;\n"
+"in vec3 Normal_cameraspace;\n"
+"in vec3 LightDirection_cameraspace;\n"
+"in vec3 EyeDirection_cameraspace;\n"
 "out vec4 color;\n"
 "void main()\n"
 "{\n"
 "    vec2 longitudeLatitude = vec2((atan(texCoords.x, texCoords.z) / 3.1415926 + 1.0) * 0.5, (asin(texCoords.y / (sqrt(texCoords.x * texCoords.x + texCoords.y * texCoords.y + texCoords.z * texCoords.z)))) / 3.1415926 + 0.5);\n"
-"    color = texture( myTextureSampler, longitudeLatitude);\n"
+"    vec4 materialDiffuseColor = texture( myTextureSampler, longitudeLatitude);\n"
+// Normal of the computed fragment, in camera space
+"    vec3 n = normalize(Normal_cameraspace);\n"
+// Direction of the light (from the fragment to the light)
+"	 vec3 l = normalize(LightDirection_cameraspace);\n"
+"	 float cosTheta = clamp( dot( n,l ), 0,1 );\n"
+"	 vec4 lightColor = vec4(1.0, 0.90, 0.85, 1.0);\n"
+"	 float lightPower = 1500.0;\n"
+"	 float distance = length(LightDirection_cameraspace);\n"
+"	 vec4 materialAmbientColor = vec4(0.37,0.37,0.37,1.0) * materialDiffuseColor;"
+// Eye vector (towards the camera)
+"    vec3 E = normalize(EyeDirection_cameraspace);\n"
+// Direction in which the triangle reflects the light
+"    vec3 R = reflect(-l, n);\n"
+// Cosine of the angle between the Eye vector and the Reflect vector,
+// clamped to 0
+//  - Looking into the reflection -> 1
+//  - Looking elsewhere -> < 1
+"    float cosAlpha = clamp(dot(E, R), 0, 1);\n"
+"	 color = materialAmbientColor + materialDiffuseColor * lightColor * lightPower * cosTheta / (distance*distance) + materialDiffuseColor * lightColor * lightPower * pow(cosAlpha,5) / (distance*distance);\n"
 "}\n";
 
 
@@ -85,8 +125,6 @@ int main(void)
     GLFWwindow* window;
     //Declare handlers for vertex array, vertex buffer, shaders, and program
     GLuint vertex_shader, fragment_shader, program;
-    //Declare location for MVP
-    GLint mvp_location;
 
     //Set error callback function
     glfwSetErrorCallback(error_callback);
@@ -148,48 +186,16 @@ int main(void)
     // Read our .obj file
     std::vector< glm::vec3 > vertices;
     std::vector< glm::vec2 > uvs;
-    std::vector< glm::vec3 > normals; // Won't be used at the moment.
+    std::vector< glm::vec3 > normals;
     bool res = loadOBJ("../assets/sphere.obj", vertices, uvs, normals);
 
     //cout << "vertices.size() = " << vertices.size() << endl;
 
-    GLuint pos_buffer;
-
-    //Position vertex data:
-    //Generate 1 buffer and store it in vertex_buffer
+    //Position vertex data
+	GLuint pos_buffer;
     glGenBuffers(1, &pos_buffer);
-
-    //Bind it to an array of vertex attributes
     glBindBuffer(GL_ARRAY_BUFFER, pos_buffer);
-
-    //Assign memory to buffer and initialize it to values in vertices array
-    /* usage is a hint to the GL implementation as to how a buffer object's data store will
-     * be accessed. This enables the GL implementation to make more intelligent decisions
-     * that may significantly impact buffer object performance. It does not, however, constrain
-     * the actual usage of the data store. usage can be broken down into two parts: first, the
-     * frequency of access (modification and usage), and second, the nature of that access.
-     *
-     * The frequency of access may be one of these:
-     * -Stream: The data store contents will be modified once and used at most a few times.
-     * -Static: The data store contents will be modified once and used many times.
-     * -Dynamic: The data store contents will be modified repeatedly and used many times.
-     *
-     * The nature of access may be one of these:
-     * -Draw: The data store contents are modified by the application, and used as the source
-     * for GL drawing and image specification commands.
-     * -Read: The data store contents are modified by reading data from the GL, and used to
-     * return that data when queried by the application.
-     * -Copy: The data store contents are modified by reading data from the GL, and used as
-     * the source for GL drawing and image specification commands.
-     * */
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
-
-    //glEnableVertexAttribArray — Enable or disable a generic vertex attribute array
-    //glVertexAttribPointer — define an array of generic vertex attribute data
-    //e.g. enabling vPos, 2 components per vertex attribute, of type float, not to
-    //be normalized (taken as passed), with a sizeof(member) offset btwn consecutive
-    //components within the attribute. Last arg gives how many bytes into the vertex
-    //you'll find this attribute
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
                           0, (void*) 0);
@@ -202,6 +208,22 @@ int main(void)
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE,
                           0, (void*) 0);
+
+	//Normals
+	GLuint normalbuffer;
+	glGenBuffers(1, &normalbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW);
+	glEnableVertexAttribArray(2);
+	glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+	glVertexAttribPointer(
+		2,                                // attribute
+		3,                                // size
+		GL_FLOAT,                         // type
+		GL_FALSE,                         // normalized?
+		0,                                // stride
+		(void*)0                          // array buffer offset
+	);
 
     //Texture vertex data:
     glEnable(GL_TEXTURE_2D);
@@ -226,6 +248,7 @@ int main(void)
     glShaderSource(vertex_shader, 1, &vertex_shader_text, NULL);
     glCompileShader(vertex_shader);
 
+	cout << "Compiling vertex shader" << endl;
     cout << glGetError() << endl;
     cout << gluErrorString(glGetError()) << endl;
 
@@ -246,6 +269,8 @@ int main(void)
     fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragment_shader, 1, &fragment_shader_text, NULL);
     glCompileShader(fragment_shader);
+
+	cout << "Compiling fragment shader" << endl;
 
     cout << glGetError() << endl;
     cout << gluErrorString(glGetError()) << endl;
@@ -272,7 +297,9 @@ int main(void)
 
     //Only at init:
     //Get handles to MatrixViewProjection matrix, and Pos and Color attributes
-    mvp_location = glGetUniformLocation(program, "MVP");
+	GLint mvp_location = glGetUniformLocation(program, "MVP");
+	GLint m_location = glGetUniformLocation(program, "M");
+	GLint v_location = glGetUniformLocation(program, "V");
     //We also have to tell OpenGL to which texture unit each shader sampler belongs to by setting each sampler
     glUniform1i(glGetUniformLocation(program, "myTextureSampler"), 0);
 
@@ -336,6 +363,8 @@ int main(void)
 			// Send our transformation to the currently bound shader, in the "MVP" uniform
 			// This is done in the main loop since each model will have a different MVP matrix (At least for the M part)
 			glUniformMatrix4fv(mvp_location, 1, GL_FALSE, &mvp[0][0]);
+			glUniformMatrix4fv(m_location, 1, GL_FALSE, &planets[i].model[0][0]);
+			glUniformMatrix4fv(v_location, 1, GL_FALSE, &View[0][0]);
 
 			glDrawArrays(GL_TRIANGLES, 0, vertices.size() * sizeof(glm::vec3)); // Starting from vertex 0; 3 vertices = 1 triangle
 
