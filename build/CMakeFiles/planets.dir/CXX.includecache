@@ -1220,6 +1220,26 @@ Windows.h
 SOIL.h
 -
 
+C:/repo/gltest/src/loadShaders.hpp
+stdio.h
+-
+string
+-
+vector
+-
+iostream
+-
+fstream
+-
+algorithm
+-
+stdlib.h
+-
+string.h
+-
+GL/glew.h
+-
+
 C:/repo/gltest/src/loadTex.hpp
 stdio.h
 -
@@ -1257,6 +1277,10 @@ loadOBJ.hpp
 C:/repo/gltest/src/loadOBJ.hpp
 planet.hpp
 C:/repo/gltest/src/planet.hpp
+loadShaders.hpp
+C:/repo/gltest/src/loadShaders.hpp
+text2D.hpp
+C:/repo/gltest/src/text2D.hpp
 chrono
 -
 
@@ -1275,4 +1299,16 @@ loadTex.hpp
 C:/repo/gltest/src/loadTex.hpp
 
 C:/repo/gltest/src/soil/src/SOIL.h
+
+C:/repo/gltest/src/text2D.hpp
+vector
+-
+cstring
+-
+GL/glew.h
+-
+loadShaders.hpp
+C:/repo/gltest/src/loadShaders.hpp
+loadTex.hpp
+C:/repo/gltest/src/loadTex.hpp
 

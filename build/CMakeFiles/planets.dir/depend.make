@@ -169,8 +169,10 @@ CMakeFiles/planets.dir/main.cpp.obj: C:/repo/gltest/libs/glm-0.9.9.5/glm/vec3.hp
 CMakeFiles/planets.dir/main.cpp.obj: C:/repo/gltest/libs/glm-0.9.9.5/glm/vec4.hpp
 CMakeFiles/planets.dir/main.cpp.obj: C:/repo/gltest/libs/glm-0.9.9.5/glm/vector_relational.hpp
 CMakeFiles/planets.dir/main.cpp.obj: C:/repo/gltest/src/loadOBJ.hpp
+CMakeFiles/planets.dir/main.cpp.obj: C:/repo/gltest/src/loadShaders.hpp
 CMakeFiles/planets.dir/main.cpp.obj: C:/repo/gltest/src/loadTex.hpp
 CMakeFiles/planets.dir/main.cpp.obj: C:/repo/gltest/src/main.cpp
 CMakeFiles/planets.dir/main.cpp.obj: C:/repo/gltest/src/planet.hpp
 CMakeFiles/planets.dir/main.cpp.obj: C:/repo/gltest/src/soil/src/SOIL.h
+CMakeFiles/planets.dir/main.cpp.obj: C:/repo/gltest/src/text2D.hpp
 

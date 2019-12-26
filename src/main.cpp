@@ -1,81 +1,14 @@
 #include "loadTex.hpp"
 #include "loadOBJ.hpp"
 #include "planet.hpp"
+#include "loadShaders.hpp"
+#include "text2D.hpp"
 
 #include <chrono>
 
 using namespace std;
 
 double offset = 0.0;
-
-//In vertex shader: transforming vertex positions as position = MVP * position (in model space)
-static const char* vertex_shader_text =
-"#version 330 core\n"
-"uniform mat4 MVP;\n"
-"uniform mat4 M;\n"
-"uniform mat4 V;\n"
-"layout(location = 0) in vec3 vertexPosition_modelspace;\n"
-"layout(location = 1) in vec2 vertexUV;\n"
-"layout(location = 2) in vec3 vertexNormal_modelspace;\n"
-"out vec2 UV;\n"
-"out vec4 texCoords;\n"
-"out vec3 Normal_cameraspace;\n"
-"out vec3 LightDirection_cameraspace;\n"
-"out vec3 EyeDirection_cameraspace;\n"
-"void main()\n"
-"{\n"
-"    gl_Position = MVP * vec4(vertexPosition_modelspace, 1.0);\n"
-"    UV = vec2(vertexUV.x, 1.0 - vertexUV.y);\n"
-"    texCoords = vec4(vertexPosition_modelspace, 1.0);\n"
-// Position of the vertex, in worldspace : M * position
-"	 vec3 Position_worldspace = (M * vec4(vertexPosition_modelspace, 1)).xyz;\n"
-// Vector that goes from the vertex to the camera, in camera space.
-// In camera space, the camera is at the origin (0,0,0).
-"	 vec3 vertexPosition_cameraspace = (V * M * vec4(vertexPosition_modelspace, 1)).xyz; \n"
-"	 vec3 EyeDirection_cameraspace = vec3(0, 0, 0) - vertexPosition_cameraspace; \n"
-// Vector that goes from the vertex to the light, in camera space. M is ommited because it's identity.
-"	 vec3 LightPosition_worldspace = vec3(0, 0, 68);\n"	
-"	 vec3 LightPosition_cameraspace = (V * vec4(LightPosition_worldspace, 1)).xyz;\n"
-"	 LightDirection_cameraspace = LightPosition_cameraspace + EyeDirection_cameraspace;\n"
-// Normal of the the vertex, in camera space
-"	 Normal_cameraspace = (V * M * vec4(vertexNormal_modelspace, 0)).xyz;\n" // Only correct if ModelMatrix does not scale the model ! Use its inverse transpose if not.
-"}\n";
-
-//In fragment shader:
-static const char* fragment_shader_text =
-"#version 330 core\n"
-"in vec2 UV;\n"
-"in vec4 texCoords;\n"
-"uniform sampler2D myTextureSampler;\n"
-"in vec3 Normal_cameraspace;\n"
-"in vec3 LightDirection_cameraspace;\n"
-"in vec3 EyeDirection_cameraspace;\n"
-"out vec4 color;\n"
-"void main()\n"
-"{\n"
-"    vec2 longitudeLatitude = vec2((atan(texCoords.x, texCoords.z) / 3.1415926 + 1.0) * 0.5, (asin(texCoords.y / (sqrt(texCoords.x * texCoords.x + texCoords.y * texCoords.y + texCoords.z * texCoords.z)))) / 3.1415926 + 0.5);\n"
-"    vec4 materialDiffuseColor = texture( myTextureSampler, longitudeLatitude);\n"
-// Normal of the computed fragment, in camera space
-"    vec3 n = normalize(Normal_cameraspace);\n"
-// Direction of the light (from the fragment to the light)
-"	 vec3 l = normalize(LightDirection_cameraspace);\n"
-"	 float cosTheta = clamp( dot( n,l ), 0,1 );\n"
-"	 vec4 lightColor = vec4(1.0, 0.90, 0.85, 1.0);\n"
-"	 float lightPower = 1500.0;\n"
-"	 float distance = length(LightDirection_cameraspace);\n"
-"	 vec4 materialAmbientColor = vec4(0.37,0.37,0.37,1.0) * materialDiffuseColor;"
-// Eye vector (towards the camera)
-"    vec3 E = normalize(EyeDirection_cameraspace);\n"
-// Direction in which the triangle reflects the light
-"    vec3 R = reflect(-l, n);\n"
-// Cosine of the angle between the Eye vector and the Reflect vector,
-// clamped to 0
-//  - Looking into the reflection -> 1
-//  - Looking elsewhere -> < 1
-"    float cosAlpha = clamp(dot(E, R), 0, 1);\n"
-"	 color = materialAmbientColor + materialDiffuseColor * lightColor * lightPower * cosTheta / (distance*distance) + materialDiffuseColor * lightColor * lightPower * pow(cosAlpha,5) / (distance*distance);\n"
-"}\n";
-
 
 static void error_callback(int error, const char* description)
 {
@@ -239,61 +172,12 @@ int main(void)
 		planets.emplace_back(Planet(i));
 	}
 
-    //Variables for checking shader compilation
-    GLint Result = GL_FALSE;
-    int InfoLogLength;
-
-    //Compile vertex shader defined as text above to GL object and compile
-    vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex_shader, 1, &vertex_shader_text, NULL);
-    glCompileShader(vertex_shader);
-
-	cout << "Compiling vertex shader" << endl;
-    cout << glGetError() << endl;
-    cout << gluErrorString(glGetError()) << endl;
-
-    // Check Vertex Shader
-    glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &Result);
-    glGetShaderiv(vertex_shader, GL_INFO_LOG_LENGTH, &InfoLogLength);
-    if ( InfoLogLength > 0 )
-      {
-	std::vector<char> VertexShaderErrorMessage(InfoLogLength+1);
-	glGetShaderInfoLog(vertex_shader, InfoLogLength, NULL, &VertexShaderErrorMessage[0]);
-	printf("%s\n", &VertexShaderErrorMessage[0]);
-      }
-
-    cout << glGetError() << endl;
-    cout << gluErrorString(glGetError()) << endl;
-
-    //Compile fragment shader defined as text above to GL object and compile
-    fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment_shader, 1, &fragment_shader_text, NULL);
-    glCompileShader(fragment_shader);
-
-	cout << "Compiling fragment shader" << endl;
-
-    cout << glGetError() << endl;
-    cout << gluErrorString(glGetError()) << endl;
-
-    // Check Fragment Shader
-    glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &Result);
-    glGetShaderiv(fragment_shader, GL_INFO_LOG_LENGTH, &InfoLogLength);
-    if ( InfoLogLength > 0 )
-      {
-    	std::vector<char> FragmentShaderErrorMessage(InfoLogLength+1);
-    	glGetShaderInfoLog(fragment_shader, InfoLogLength, NULL, &FragmentShaderErrorMessage[0]);
-    	printf("%s\n", &FragmentShaderErrorMessage[0]);
-      }
-
-    cout << glGetError() << endl;
-    cout << gluErrorString(glGetError()) << endl;
-
-    //Create program handle and attach shaders defined above
-    program = glCreateProgram();
-    glAttachShader(program, vertex_shader);
-    glAttachShader(program, fragment_shader);
-    glLinkProgram(program);
+	//Load, compile, and link standard shaders
+	program = loadShaders("../src/standardShader.vertexshader", "../src/standardShader.fragmentshader");
     glUseProgram(program);
+
+	// Initialize text library with the Holstein font
+	initText2D("../assets/Holstein.tga");
 
     //Only at init:
     //Get handles to MatrixViewProjection matrix, and Pos and Color attributes
@@ -304,6 +188,9 @@ int main(void)
     glUniform1i(glGetUniformLocation(program, "myTextureSampler"), 0);
 
 	chrono::system_clock::time_point oldTime = chrono::system_clock::now();
+	chrono::system_clock::time_point FPSTime = oldTime;
+	int nbFrames = 0;
+	char FPStext[256] = "N/A ms/frame";
     //==Main loop==//
     while (!glfwWindowShouldClose(window))
     {
@@ -346,6 +233,29 @@ int main(void)
             glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
             );
 
+		//Enable attribute buffers
+		//Position vertex data
+		glBindBuffer(GL_ARRAY_BUFFER, pos_buffer);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
+			0, (void*)0);
+		//UVs
+		glBindBuffer(GL_ARRAY_BUFFER, uv_buffer);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE,
+			0, (void*)0);
+		//Normals
+		glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+		glEnableVertexAttribArray(2);
+		glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+		glVertexAttribPointer(
+			2,                                // attribute
+			3,                                // size
+			GL_FLOAT,                         // type
+			GL_FALSE,                         // normalized?
+			0,                                // stride
+			(void*)0                          // array buffer offset
+		);
 		//For each of the planets
 		for (unsigned int i = 0; i < planets.size(); ++i)
 		{
@@ -369,10 +279,27 @@ int main(void)
 			glDrawArrays(GL_TRIANGLES, 0, vertices.size() * sizeof(glm::vec3)); // Starting from vertex 0; 3 vertices = 1 triangle
 
 		}
+
+		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+		glDisableVertexAttribArray(2);
+
+		//FPS counter
+		nbFrames++;
+		if (chrono::duration_cast<std::chrono::milliseconds>(newTime - FPSTime).count() > 1000)
+		{
+			sprintf(FPStext, "%f ms/frame", 1000.0 / double(nbFrames));
+			nbFrames = 0;
+			FPSTime += chrono::seconds{ 1 };
+		}
+		printText2D(FPStext, 10, 10, 17);
+
 		glfwSwapBuffers(window);
         glfwPollEvents();
     }
     glfwDestroyWindow(window);
+	// Delete the text's VBO, the shader and the texture
+	cleanupText2D();
     glfwTerminate();
     exit(EXIT_SUCCESS);
 }

@@ -170,7 +170,9 @@ CMakeFiles/planets.dir/main.cpp.obj
  C:/repo/gltest/libs/glm-0.9.9.5/glm/vec4.hpp
  C:/repo/gltest/libs/glm-0.9.9.5/glm/vector_relational.hpp
  C:/repo/gltest/src/loadOBJ.hpp
+ C:/repo/gltest/src/loadShaders.hpp
  C:/repo/gltest/src/loadTex.hpp
  C:/repo/gltest/src/main.cpp
  C:/repo/gltest/src/planet.hpp
  C:/repo/gltest/src/soil/src/SOIL.h
+ C:/repo/gltest/src/text2D.hpp

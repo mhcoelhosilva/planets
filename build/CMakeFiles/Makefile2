@@ -67,8 +67,8 @@ CMAKE_BINARY_DIR = C:\repo\gltest\build
 # Target rules for target CMakeFiles/planets.dir
 
 # All Build rule for target.
-CMakeFiles/planets.dir/all: CMakeFiles/glewLib.dir/all
 CMakeFiles/planets.dir/all: CMakeFiles/planetLib.dir/all
+CMakeFiles/planets.dir/all: CMakeFiles/glewLib.dir/all
 	$(MAKE) -f CMakeFiles\planets.dir\build.make CMakeFiles/planets.dir/depend
 	$(MAKE) -f CMakeFiles\planets.dir\build.make CMakeFiles/planets.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=C:\repo\gltest\build\CMakeFiles --progress-num=4,5 "Built target planets"
