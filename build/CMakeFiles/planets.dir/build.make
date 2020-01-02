@@ -82,6 +82,7 @@ planets.exe: CMakeFiles/planets.dir/build.make
 planets.exe: libglewLib.a
 planets.exe: C:/repo/gltest/src/../libs/soil/lib/libSOIL.a
 planets.exe: C:/repo/gltest/libs/glfw-3.3.bin.WIN32/glfw-3.3.bin.WIN32/lib-mingw-w64/glfw3.dll
+planets.exe: libbulletLib.a
 planets.exe: libplanetLib.a
 planets.exe: CMakeFiles/planets.dir/linklibs.rsp
 planets.exe: CMakeFiles/planets.dir/objects1.rsp

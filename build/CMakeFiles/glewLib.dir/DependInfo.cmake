@@ -14,6 +14,7 @@ set(CMAKE_C_TARGET_INCLUDE_PATH
   "C:/repo/gltest/libs/glfw-3.3.bin.WIN32/glfw-3.3.bin.WIN32/include/GLFW"
   "C:/repo/gltest/libs/glm-0.9.9.5/glm"
   "C:/repo/gltest/src/soil/src"
+  "C:/repo/gltest/src/../libs/bullet3/src"
   )
 
 # Targets to which this target links.

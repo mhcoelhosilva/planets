@@ -1,32 +1,57 @@
 #version 330 core
+
+//Input
 in vec2 UV;
 in vec4 texCoords;
-uniform sampler2D myTextureSampler;
-in vec3 Normal_cameraspace;
+in vec3 Position_worldspace;
 in vec3 LightDirection_cameraspace;
 in vec3 EyeDirection_cameraspace;
-out vec4 color;
+in vec3 LightDirection_tangentspace;
+in vec3 EyeDirection_tangentspace;
+
+//Uniform
+uniform sampler2D myTextureSampler;
+uniform sampler2D NormalTextureSampler;
+uniform sampler2D SpecularTextureSampler;
+uniform mat4 V;
+uniform mat4 M;
+uniform mat3 MV3x3;
+uniform vec3 LightPosition_worldspace;
+
+//Output
+out vec3 color;
+
 void main()
 {
     vec2 longitudeLatitude = vec2((atan(texCoords.x, texCoords.z) / 3.1415926 + 1.0) * 0.5, (asin(texCoords.y / (sqrt(texCoords.x * texCoords.x + texCoords.y * texCoords.y + texCoords.z * texCoords.z)))) / 3.1415926 + 0.5);
-    vec4 materialDiffuseColor = texture( myTextureSampler, longitudeLatitude);
-// Normal of the computed fragment, in camera space
-    vec3 n = normalize(Normal_cameraspace);
-// Direction of the light (from the fragment to the light)
-	 vec3 l = normalize(LightDirection_cameraspace);
+    vec3 materialDiffuseColor = texture2D( myTextureSampler, longitudeLatitude).rgb;
+	vec3 materialAmbientColor = vec3(0.35,0.35,0.35) * materialDiffuseColor;
+	vec3 materialSpecularColor = texture2D( SpecularTextureSampler, longitudeLatitude ).rgb * 0.3;
+	// Local normal, in tangent space
+	vec3 TextureNormal_tangentspace = normalize( texture2D( NormalTextureSampler, longitudeLatitude ).rgb*2.0 - 1.0);
+
+	float distance = length(LightPosition_worldspace - Position_worldspace);
+
+	vec3 lightColor = vec3(1.0, 0.90, 0.85);
+	float lightPower = 1500000000.0;
+
+	// Normal of the computed fragment, in camera space
+    vec3 n = TextureNormal_tangentspace;
+	// Direction of the light (from the fragment to the light)
+	 vec3 l = normalize(LightDirection_tangentspace);
 	 float cosTheta = clamp( dot( n,l ), 0,1 );
-	 vec4 lightColor = vec4(1.0, 0.90, 0.85, 1.0);
-	 float lightPower = 1500.0;
-	 float distance = length(LightDirection_cameraspace);
-	 vec4 materialAmbientColor = vec4(0.37,0.37,0.37,1.0) * materialDiffuseColor;
-// Eye vector (towards the camera)
-    vec3 E = normalize(EyeDirection_cameraspace);
-// Direction in which the triangle reflects the light
+
+	// Eye vector (towards the camera)
+    vec3 E = normalize(EyeDirection_tangentspace);
+	// Direction in which the triangle reflects the light
     vec3 R = reflect(-l, n);
-// Cosine of the angle between the Eye vector and the Reflect vector,
-// clamped to 0
-//  - Looking into the reflection -> 1
-//  - Looking elsewhere -> < 1
+	// Cosine of the angle between the Eye vector and the Reflect vector,
+	// clamped to 0
+	//  - Looking into the reflection -> 1
+	//  - Looking elsewhere -> < 1
     float cosAlpha = clamp(dot(E, R), 0, 1);
-	 color = materialAmbientColor + materialDiffuseColor * lightColor * lightPower * cosTheta / (distance*distance) + materialDiffuseColor * lightColor * lightPower * pow(cosAlpha,5) / (distance*distance);
+
+	color = materialAmbientColor + 
+			materialDiffuseColor * lightColor * lightPower * cosTheta / (distance*distance);// + 
+			materialSpecularColor * lightColor * lightPower * pow(cosAlpha,5) / (distance*distance);
 };

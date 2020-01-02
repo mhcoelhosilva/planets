@@ -1,4 +1,5 @@
 C:/repo/gltest/build/CMakeFiles/edit_cache.dir
+C:/repo/gltest/build/CMakeFiles/bulletLib.dir
 C:/repo/gltest/build/CMakeFiles/planets.dir
 C:/repo/gltest/build/CMakeFiles/glewLib.dir
 C:/repo/gltest/build/CMakeFiles/planetLib.dir

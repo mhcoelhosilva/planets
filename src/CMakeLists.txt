@@ -19,13 +19,26 @@ find_package (glm REQUIRED)
 set(SOURCE_FILES main.cpp)
 add_executable(planets ${SOURCE_FILES})
 
-include_directories(${OPENGL_INCLUDE_DIR} ${GLEW_DIR} ${GLFW_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/soil/src)
+include_directories(${OPENGL_INCLUDE_DIR} ${GLEW_DIR} ${GLFW_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/soil/src ${CMAKE_SOURCE_DIR}/../libs/bullet3/src)
 
 add_library(glewLib STATIC ${CMAKE_SOURCE_DIR}/../libs/glew-2.1.0/src/glew.c)
 
+file(GLOB_RECURSE bulletSrc RELATIVE ${CMAKE_SOURCE_DIR} "../libs/bullet3/src/Bullet3Collision/*.cpp"
+							 "../libs/bullet3/src/Bullet3Common/*.cpp"
+							 "../libs/bullet3/src/Bullet3Dynamics/*.cpp"
+							 "../libs/bullet3/src/Bullet3Geometry/*.cpp"
+							 "../libs/bullet3/src/Bullet3Serialize/*.cpp"
+							 "../libs/bullet3/src/BulletCollision/*.cpp"
+							 "../libs/bullet3/src/BulletDynamics/*.cpp"
+							 "../libs/bullet3/src/BulletInverseDynamics/*.cpp"
+							 "../libs/bullet3/src/BulletSoftBody/*.cpp"
+							 "../libs/bullet3/src/LinearMath/*.cpp")
+
+add_library(bulletLib STATIC ${bulletSrc})
+
 set(SOIL_LIBRARY ${CMAKE_SOURCE_DIR}/../libs/soil/lib/libSOIL.a)
 
-add_library(planetLib STATIC loadOBJ.hpp loadTex.hpp loadShaders.hpp text2D.hpp planet.hpp)
+add_library(planetLib STATIC loadOBJ.hpp loadTex.hpp loadShaders.hpp text2D.hpp planet.hpp physics.hpp myCustomMotionState.hpp GLDebugDrawer.hpp tangentspace.hpp VBOindexer.hpp)
 set_target_properties(planetLib PROPERTIES LINKER_LANGUAGE CXX)
 
 target_link_libraries (planets 
@@ -34,5 +47,6 @@ target_link_libraries (planets
 	${OPENGL_glu_LIBRARY}
 	${OPENGL_gl_LIBRARY} 
 	${GLFW_LIBRARY}
+	bulletLib
 	planetLib
 )

@@ -6,6 +6,8 @@
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
 #include "loadTex.hpp"
+#include "physics.hpp"
+#include "myCustomMotionState.hpp"
 
 using namespace std;
 #define pi 3.142857
@@ -13,7 +15,6 @@ using namespace std;
 class Planet
   {
 	private:
-	  unsigned int index;
 	  //xPos, yPos, zPos defined as distance from sun (which is at (0,0,0) in this system)
 	  float xPos;
 	  float yPos;
@@ -22,11 +23,18 @@ class Planet
 	  float a;
 	  float rotationRate;
 	  int counter;
+	  btCollisionShape* sphereCollisionShape;
+	  btDefaultMotionState* motionstate;
+	  btTransform* worldTrans;
 	  
 	public:
+	  int index;
       GLuint texID;
 	  glm::mat4 model;
 	  float scale;
+	  glm::vec3 worldPos;
+
+	  btRigidBody *rigidBody;
 	
 	  static float scaleConst;
 	  static float timeScale;
@@ -54,6 +62,10 @@ class Planet
 
 		//Set up planetary data
 		xPos = 1.496 * pow(10.0f, 8.0f) * planetAphelia[index]; //starting position is at aphelion
+		updateWorldPos();
+		worldTrans = new btTransform(btQuaternion(0.0f, 0.0f, 0.0f, 1.0f), btVector3(worldPos.x, worldPos.y, worldPos.z));
+
+		//Scale and set planetary constants
 		if (index != 0)
 		{
 			scale = scaleConst * (planetRadii[index] / planetRadii[3]); //scale relative to Earth
@@ -70,6 +82,20 @@ class Planet
 		model = glm::mat4(1.0f);
 		glm::vec3 scaleVec = scale * glm::vec3(0.5f, 0.5f, 0.5f);
 		model = glm::scale(model, scaleVec);
+
+		//Set up rigid body
+		this->sphereCollisionShape = new btSphereShape(0.5 * scale);
+
+		this->motionstate = new btDefaultMotionState(*this->worldTrans);
+
+		btRigidBody::btRigidBodyConstructionInfo rigidBodyCI(
+			0,                  // mass, in kg. 0 -> Static object, will never move.
+			this->motionstate,
+			this->sphereCollisionShape,  // collision shape of body
+			btVector3(0, 0, 0)    // local inertia
+		);
+		
+		this->rigidBody = new btRigidBody(rigidBodyCI);
 	  }
 
 	  Planet(int index)
@@ -80,6 +106,10 @@ class Planet
 
 		  //Set up planetary data
 		  xPos = 1.496 * pow(10.0f, 8.0f) * planetAphelia[index]; //starting position is at aphelion
+		  updateWorldPos();
+		  worldTrans = new btTransform(btQuaternion(0.0f, 0.0f, 0.0f, 1.0f), btVector3(worldPos.x, worldPos.y, worldPos.z));
+
+		  //Scale and set planetary constants
 		  if (index != 0)
 		  {
 			  scale = scaleConst * (planetRadii[index] / planetRadii[3]); //scale relative to Sun
@@ -97,6 +127,20 @@ class Planet
 		  model = glm::mat4(1.0f);
 		  glm::vec3 scaleVec = scale * glm::vec3(0.5f, 0.5f, 0.5f);
 		  model = glm::scale(model, scaleVec);
+
+		  //Set up rigid body
+		  this->sphereCollisionShape = new btSphereShape(2.69 * scale);
+
+		  this->motionstate = new btDefaultMotionState(*this->worldTrans);
+
+		  btRigidBody::btRigidBodyConstructionInfo rigidBodyCI(
+			  0,                  // mass, in kg. 0 -> Static object, will never move.
+			  this->motionstate,
+			  this->sphereCollisionShape,  // collision shape of body
+			  btVector3(0, 0, 0)    // local inertia
+		  );
+
+		  this->rigidBody = new btRigidBody(rigidBodyCI);
 	  }
 	  
 	  ~Planet()
@@ -141,8 +185,6 @@ class Planet
 
 				  //Update location in local coordinates
 				  glm::vec3 newPos = pos + velocity * dt / 1000.0f;
-				  //cout << "Pos: " << pos.x << " " << pos.y << " " << pos.z << endl;
-				  //cout << "newPos: " << newPos.x << " " << newPos.y << " " << newPos.z << endl;
 
 
 				  //Translate model to new position
@@ -154,6 +196,8 @@ class Planet
 				  xPos = newPos.x;
 				  yPos = newPos.y;
 				  zPos = newPos.z;
+				  updateWorldPos();
+				  this->motionstate->setWorldTransform(btTransform(btQuaternion(0.0f, 0.0f, 0.0f, 1.0f), btVector3(worldPos.x, worldPos.y, worldPos.z)));
 			  }
 		  }
 	  }
@@ -173,6 +217,23 @@ class Planet
 		  return worldPosv3;
 	  }
 
+	  void updateWorldPos()
+	  {
+		  glm::vec3 localPos = { xPos, yPos, zPos };
+
+		  //Set up transformation matrix (rotate about x direction and move back into -z)
+		  glm::mat4 transform = glm::mat4(1.0f);
+		  transform = glm::rotate(transform, glm::radians(10.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		  transform = glm::translate(transform, glm::vec3(0.0, 0.0, -50.0));
+
+		  //Get transform coordinates and return as vec3
+		  glm::vec4 worldPos = transform * glm::vec4(localPos, 1.0);
+		  glm::vec3 worldPosv3(worldPos);
+		  worldPosv3 = worldPosv3 / 3000500.0f;
+
+		  this->worldPos = worldPosv3;
+	  }
+
 	  void updateScale()
 	  {
 		  if (index != 0)
@@ -188,7 +249,7 @@ class Planet
 };
 
 float Planet::scaleConst = 25.0f;
-float Planet::timeScale = 75000.0f;
+float Planet::timeScale = 70000.0f;
 vector<string> Planet::planetNames = { "sun", "mercury", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune" };
 vector<float> Planet::planetRadii = { 695510.0, 2439.7, 6051.8, 6371.0, 3389.5, 69911.0, 58232.0, 25362.0, 24622.0 }; //km
 vector<float> Planet::planetPerihelia = { 0.0, .307, .718, .98, 1.38, 4.95, 9.05, 18.4, 29.8 }; //AU
